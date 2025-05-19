@@ -183,7 +183,7 @@ with tab1:
     past_df = filtered_df.copy()
     today = df['order_date'].max()
     past_df = past_df[past_df['order_date'] >= today - timedelta(days=365)].copy()
-    past_df['Month'] = past_df['order_date'].dt.strftime("%b'%y")
+    past_df['Month'] = past_df['order_date'].dt.strftime("%b-%y")
     past_df['Week'] = "W" + past_df['order_date'].dt.isocalendar().week.astype(str)
     past_df['SKU'] = past_df['product_sku']
     past_df['Name'] = past_df['product_name']
