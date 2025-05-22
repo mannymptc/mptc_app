@@ -52,7 +52,8 @@ if df.empty:
 # ------------------ SIDEBAR DATE FILTERS ------------------
 
 # Get latest date from dataset
-today = df['order_date'].max()
+max_order_date = df['order_date'].max()
+today = pd.Timestamp.now().normalize()
 default_start = today - timedelta(days=30)
 default_end = today
 
@@ -80,9 +81,10 @@ elif quick_range != "None":
     end_date = today
     start_date = today - timedelta(days=days_map[quick_range])
 else:
-    # Default to last 30 days
     start_date = default_start
     end_date = default_end
+
+st.sidebar.caption(f"📆 Showing data from {start_date.date()} to {end_date.date()}")
 
 # ------------------ TABS ------------------
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Sales History", "🧊 Unsold / Dead Stock", "📈 Advance Product Analysis", "📈 Advance Channel Analysis"])
@@ -188,14 +190,14 @@ with tab1:
     past_df['SKU'] = past_df['product_sku']
     past_df['Name'] = past_df['product_name']
     
-    # Create pivot matrix
+    # Inside make_history_matrix function:
     def make_history_matrix(df, value_col):
         pivot = df.pivot_table(index=['Month', 'Week'], columns='SKU', values=value_col, aggfunc='sum')
         pivot = pivot.sort_index(ascending=False).fillna("-")
-        # Flatten column headers: SKU - Name
         sku_names = df[['SKU', 'Name']].drop_duplicates().set_index('SKU')['Name'].to_dict()
-        pivot.columns = [f\"{sku} - {sku_names.get(sku, '')}\" for sku in pivot.columns]
-                return pivot.reset_index()
+        pivot.columns = [f"{sku} - {sku_names.get(sku, '')}" for sku in pivot.columns]
+        return pivot.reset_index()
+
     
     qty_matrix = make_history_matrix(past_df, 'product_qty')
     rev_matrix = make_history_matrix(past_df, 'sale_amount')
