@@ -5,7 +5,7 @@ from utils.db import connect_db
 st.set_page_config(page_title="🏠 MPTC Dashboard", layout="wide")
 
 # ----------------------- HEADER LOGO & BRANDS -----------------------
-col_logo, col_spacer, col_brands = st.columns([2.75, 0.05, 10])
+col_logo, col_spacer, col_brands = st.columns([3, 0.05, 10])
 
 with col_logo:
     st.image("assets/logo.png", width=250)
