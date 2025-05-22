@@ -192,9 +192,10 @@ with tab1:
     def make_history_matrix(df, value_col):
         pivot = df.pivot_table(index=['Month', 'Week'], columns='SKU', values=value_col, aggfunc='sum')
         pivot = pivot.sort_index(ascending=False).fillna("-")
+        # Flatten column headers: SKU - Name
         sku_names = df[['SKU', 'Name']].drop_duplicates().set_index('SKU')['Name'].to_dict()
-        pivot.columns = pd.MultiIndex.from_tuples([(sku, sku_names.get(sku, '')) for sku in pivot.columns])
-        return pivot
+        pivot.columns = [f\"{sku} - {sku_names.get(sku, '')}\" for sku in pivot.columns]
+                return pivot.reset_index()
     
     qty_matrix = make_history_matrix(past_df, 'product_qty')
     rev_matrix = make_history_matrix(past_df, 'sale_amount')
