@@ -34,7 +34,8 @@ def load_data():
     conn = connect_db()
     query = """
     SELECT od.order_id, od.product_sku, od.product_name, p.product_category,
-           od.order_channel, od.order_date, od.product_qty, od.product_price, od.cost_price
+           od.order_channel, od.order_date, od.product_qty, od.product_price,
+           od.cost_price
     FROM OrdersDespatch od
     LEFT JOIN Products p ON od.product_sku = p.product_sku
     WHERE od.order_date >= '2024-01-01'
