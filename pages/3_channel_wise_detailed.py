@@ -123,41 +123,47 @@ if filtered_df.empty:
 top_n = st.selectbox("Show Top/Bottom N Records", [5, 10, 15, 20, 25], index=1)
 
 # ------------------ KPIs ------------------
-dedup_orders = filtered_df.drop_duplicates(subset='order_id')
+# ✅ Corrected KPI Calculation Logic (matches Page 1)
+dedup_orders = (
+    filtered_df
+    .sort_values('order_value', ascending=False)
+    .drop_duplicates(subset='order_id')
+)
+
 total_orders = dedup_orders['order_id'].nunique()
 total_revenue = dedup_orders['order_value'].sum()
-avg_order_value = dedup_orders['order_value'].mean()
+avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
 unique_skus = filtered_df['product_sku'].nunique()
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("🛒 Total Orders", total_orders)
-col2.metric("💰 Total Revenue", f"£ {total_revenue:,.2f}")
-col3.metric("📦 Avg Order Value", f"£ {avg_order_value:,.2f}")
-col4.metric("🔢 Unique SKUs Sold", unique_skus)
+col1.markdown(f"**🛒 Total Orders**<br><span style='font-size: 20px;'>{total_orders:,}</span>", unsafe_allow_html=True)
+col2.markdown(f"**💰 Total Revenue**<br><span style='font-size: 20px;'>£ {total_revenue:,.2f}</span>", unsafe_allow_html=True)
+col3.markdown(f"**📦 Avg Order Value**<br><span style='font-size: 20px;'>£ {avg_order_value:,.2f}</span>", unsafe_allow_html=True)
+col4.markdown(f"**🔢 Unique SKUs Sold**<br><span style='font-size: 20px;'>{unique_skus:,}</span>", unsafe_allow_html=True)
 
 # ------------------ SKU SUMMARY ------------------
-sku_summary = (
+# Step 1: Get order_id to product_sku mapping from deduped orders only
+dedup_orders = (
+    filtered_df
+    .sort_values('order_value', ascending=False)
+    .drop_duplicates(subset='order_id')
+)
+
+# Step 2: Create order→SKU mapping for unique order count per SKU
+sku_orders = dedup_orders[['order_id', 'product_sku']].drop_duplicates()
+sku_order_counts = sku_orders['product_sku'].value_counts().rename("unique_orders").reset_index()
+sku_order_counts.columns = ['product_sku', 'unique_orders']
+
+# Step 3: Get full sold_qty (sum from all rows, not deduped)
+sku_qty = (
     filtered_df.groupby(['product_sku', 'product_name'])
-    .agg(
-        sold_qty=('product_qty', 'sum'),
-        unique_orders=('order_id', pd.Series.nunique)
-    )
+    .agg(sold_qty=('product_qty', 'sum'))
     .reset_index()
 )
 
-st.markdown(f"### 🔝 Top {top_n} Most Sold SKUs")
-st.dataframe(
-    sku_summary.sort_values(by='sold_qty', ascending=False)
-    .head(top_n)[['product_sku', 'product_name', 'sold_qty', 'unique_orders']],
-    use_container_width=True
-)
-
-st.markdown(f"### 🔻 Bottom {top_n} Least Sold SKUs")
-st.dataframe(
-    sku_summary.sort_values(by='sold_qty', ascending=True)
-    .head(top_n)[['product_sku', 'product_name', 'sold_qty', 'unique_orders']],
-    use_container_width=True
-)
+# Step 4: Merge both
+sku_summary = pd.merge(sku_qty, sku_order_counts, on='product_sku', how='left').fillna(0)
+sku_summary['unique_orders'] = sku_summary['unique_orders'].astype(int)
 
 # ------------------ RAW DATA + DOWNLOAD ------------------
 st.markdown("### 🧾 Sample Raw Data")
