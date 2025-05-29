@@ -165,6 +165,21 @@ sku_qty = (
 sku_summary = pd.merge(sku_qty, sku_order_counts, on='product_sku', how='left').fillna(0)
 sku_summary['unique_orders'] = sku_summary['unique_orders'].astype(int)
 
+# ------------------ Display Top/Bottom N SKUs ------------------
+st.markdown(f"### 🔝 Top {top_n} Most Sold SKUs")
+top_skus = (
+    sku_summary.sort_values(by='sold_qty', ascending=False)
+    .head(top_n)[['product_sku', 'product_name', 'sold_qty', 'unique_orders']]
+)
+st.dataframe(top_skus, use_container_width=True)
+
+st.markdown(f"### 🔻 Bottom {top_n} Least Sold SKUs")
+bottom_skus = (
+    sku_summary.sort_values(by='sold_qty', ascending=True)
+    .head(top_n)[['product_sku', 'product_name', 'sold_qty', 'unique_orders']]
+)
+st.dataframe(bottom_skus, use_container_width=True)
+
 # ------------------ RAW DATA + DOWNLOAD ------------------
 st.markdown("### 🧾 Sample Raw Data")
 st.dataframe(filtered_df.head(10), use_container_width=True)
