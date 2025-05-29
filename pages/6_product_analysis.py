@@ -177,7 +177,7 @@ with tab1:
     past_df['SKU'] = past_df['product_sku']
     past_df['Name'] = past_df['product_name']
 
-    def def make_history_matrix(df, value_col):
+    def make_history_matrix(df, value_col):
         pivot = df.pivot_table(index=['Month', 'Week'], columns='SKU', values=value_col, aggfunc='sum')
         pivot = pivot.sort_index(ascending=False).fillna("-")
         sku_names = df[['SKU', 'Name']].drop_duplicates().set_index('SKU')['Name'].to_dict()
