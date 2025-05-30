@@ -1,34 +1,18 @@
 import streamlit as st
+st.set_page_config(page_title="📋 Channel-wise Detailed Report", layout="wide")  # ✅ First Streamlit call
+
 import pandas as pd
 import pyodbc
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-import streamlit_authenticator as stauth
-from auth_config import credentials
+from utils.auth_utils import run_auth  # ✅ Use shared auth logic
 
-st.set_page_config(page_title="📋 Channel-wise Detailed Report", layout="wide")
+#-------------------------------------------------
+# 🔐 Run authentication
+name, username = run_auth()
+
+# ------------------ PAGE TITLE ------------------
 st.title("🧾 Channel-wise Detailed Analytics")
-
-#--------------------------------------------------------------------------
-# Setup login form
-authenticator = stauth.Authenticate(
-    credentials,
-    "mptc_app_cookie",           # cookie name
-    "mptc_app_key",              # key used to encrypt the cookie
-    cookie_expiry_days=0.1251    # 3 hour session time per login
-)
-
-name, auth_status, username = authenticator.login("Login", "main")
-
-if auth_status is False:
-    st.error("Incorrect username or password")
-
-if auth_status is None:
-    st.warning("Please enter your username and password")
-    st.stop()
-
-# Show logout
-authenticator.logout("Logout", "sidebar")
 
 # ------------------ DATABASE CONNECTION ------------------
 def connect_db():
