@@ -8,32 +8,14 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
-import streamlit_authenticator as stauth
-from auth_config import credentials
+
+from utils.auth_utils import run_auth  # ✅ New
+name, username = run_auth()           # ✅ New
+
+#-------------------------------------------------
 
 st.set_page_config(page_title="📦 Channel Despatch Summary", layout="wide")
 st.title("🚚 Daily Despatch Summary")
-
-#--------------------------------------------------------------------------
-# Setup login form
-authenticator = stauth.Authenticate(
-    credentials,
-    "mptc_app_cookie",           # cookie name
-    "mptc_app_key",              # key used to encrypt the cookie
-    cookie_expiry_days=0.1251    # 3 hour session time per login
-)
-
-name, auth_status, username = authenticator.login("Login", "main")
-
-if auth_status is False:
-    st.error("Incorrect username or password")
-
-if auth_status is None:
-    st.warning("Please enter your username and password")
-    st.stop()
-
-# Show logout
-authenticator.logout("Logout", "sidebar")
 
 # ------------------ DB CONNECT ------------------
 def connect_db():
