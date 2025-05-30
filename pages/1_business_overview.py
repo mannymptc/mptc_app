@@ -1,16 +1,17 @@
 import streamlit as st
+st.set_page_config(page_title="📊 MPTC Business Dashboard", layout="wide")  # ✅ Must be FIRST Streamlit command
+
 import pandas as pd
 import pyodbc
 import plotly.express as px
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-from utils.auth_utils import run_auth
-name, username = run_auth()
+from utils.auth_utils import run_auth  # ✅ Auth comes after page config
 
 #----------------------------------------------------------
 
-st.set_page_config(page_title="📊 MPTC Business Dashboard", layout="wide")
+name, username = run_auth()
 st.title("🏭 Business Overview Dashboard")
 
 # ------------------ DATABASE CONNECTION ------------------
