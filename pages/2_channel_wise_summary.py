@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="📦 Channel Despatch Summary", layout="wide")  # ✅ Must be FIRST Streamlit command
+
 import pandas as pd
 import pyodbc
 from datetime import datetime, timedelta
@@ -9,12 +11,14 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-from utils.auth_utils import run_auth  # ✅ New
-name, username = run_auth()           # ✅ New
+from utils.auth_utils import run_auth  # ✅ Use central auth utils
 
 #-------------------------------------------------
 
-st.set_page_config(page_title="📦 Channel Despatch Summary", layout="wide")
+# Run secure authentication
+name, username = run_auth()
+
+# Page title
 st.title("🚚 Daily Despatch Summary")
 
 # ------------------ DB CONNECT ------------------
