@@ -1,6 +1,7 @@
 streamlit==1.34.0
 streamlit-authenticator==0.1.5
 extra-streamlit-components==0.1.56
+streamlit-authenticator==0.3.1
 pyodbc
 pandas
 openpyxl
