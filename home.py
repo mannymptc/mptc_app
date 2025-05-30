@@ -3,9 +3,15 @@ import os
 from utils.db import connect_db
 from utils.auth_utils import run_auth  # ✅ import modular auth
 
+# -------------------------------------------------------------
+# 🔒 Healthcheck: Keep app warm with Azure Health Check ping
+if os.environ.get("IS_HEALTHCHECK", "") == "true":
+    st.text("✅ App is healthy and running.")
+    st.stop()
+
+# -------------------------------------------------------------
 st.set_page_config(page_title="🏠 MPTC Dashboard", layout="wide")
 
-#--------------------------------------------------------------------
 # 🔐 Login & authentication
 name, username = run_auth()
 
@@ -20,12 +26,17 @@ with col_spacer:
 
 with col_brands:
     st.image("assets/brands.png", width=900)
-    
-st.markdown("<hr>", unsafe_allow_html=True)
 
-# ----------------------- PAGE TITLE -----------------------
+st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center;'>🏭 Welcome to MPTC App</h1>", unsafe_allow_html=True)
 st.markdown("<hr>", unsafe_allow_html=True)
+
+# 🔄 Optional: Manual Data Refresh (clear cache across app)
+with st.sidebar:
+    if st.button("🔄 Force Data Refresh"):
+        st.cache_data.clear()
+        st.success("✅ Cache cleared. Data will reload fresh on next page visit.")
+        st.rerun()
 
 # ----------------------- 3 COLUMN LAYOUT -----------------------
 col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -60,7 +71,7 @@ with col2:
                 with open("tasks.txt", "a") as f:
                     f.write(task_input + "\n")
                 st.success("✅ Task added!")
-    
+
     if os.path.exists("tasks.txt"):
         with open("tasks.txt") as f:
             tasks = [t.strip() for t in f.readlines()]
@@ -99,7 +110,6 @@ with col3:
     else:
         st.info("💬 No chat history yet.")
 
-# -------------------------------------
+# ----------------------- FOOTER -----------------------
 st.markdown("---")
-st.markdown("👤 **Built by Mantavya Jain** ")
-
+st.markdown("👤 **Built by Mantavya Jain**")
