@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="📊 Product Sales Analysis", layout="wide")
+
 import pandas as pd
 import pyodbc
 from datetime import datetime, timedelta
@@ -7,29 +9,12 @@ import plotly.express as px
 import streamlit_authenticator as stauth
 from auth_config import credentials
 
-st.set_page_config(page_title="📊 Product Sales Analysis", layout="wide")
-st.title("📦 Product Sales History & Dead Stock")
-
 #--------------------------------------------------------------------------
 # Setup login form
-authenticator = stauth.Authenticate(
-    credentials,
-    "mptc_app_cookie",           # cookie name
-    "mptc_app_key",              # key used to encrypt the cookie
-    cookie_expiry_days=0.1251    # 3 hour session time per login
-)
+from utils.auth_utils import run_auth
+name, username = run_auth()
 
-name, auth_status, username = authenticator.login("Login", "main")
-
-if auth_status is False:
-    st.error("Incorrect username or password")
-
-if auth_status is None:
-    st.warning("Please enter your username and password")
-    st.stop()
-
-# Show logout
-authenticator.logout("Logout", "sidebar")
+st.title("📦 Product Sales History & Dead Stock")
 
 # ------------------ KPI CSS ------------------
 st.markdown("""
@@ -228,8 +213,7 @@ with tab1:
 
 # ------------------ TAB 2: DEAD STOCK ------------------
 with tab2:
-    from dateutil.relativedelta import relativedelta
-
+    
     # 1. Calculate last sold dates
     last_sold = df.groupby(['product_sku', 'product_name'])['order_date'].max().reset_index()
     last_sold['Days Since Last Sale'] = (pd.Timestamp.now().normalize() - last_sold['order_date']).dt.days
