@@ -1,38 +1,18 @@
-# pages/5_routine_reports.py
-
 import streamlit as st
+st.set_page_config(page_title="📊 Routine Reports", layout="wide")  # ✅ Must be first Streamlit command
+
 import pandas as pd
 from datetime import datetime
 from utils.supplier_cleaning import clean_supplier_excel
 from utils.supplier_analysis import generate_insights
-import streamlit_authenticator as stauth
-from auth_config import credentials
+from utils.auth_utils import run_auth  # ✅ Reuse centralized login logic
 
-st.set_page_config(page_title="📊 Routine Reports", layout="wide")
+#-------------------------------------------------------
+# 🔐 User authentication
+name, username = run_auth()
+
+# --------------------- PAGE TITLE ---------------------
 st.title("📊 Routine Reports Suite")
-
-#--------------------------------------------------------------------------
-# Setup login form
-authenticator = stauth.Authenticate(
-    credentials,
-    "mptc_app_cookie",           # cookie name
-    "mptc_app_key",              # key used to encrypt the cookie
-    cookie_expiry_days=0.1251    # 3 hour session time per login
-)
-
-name, auth_status, username = authenticator.login("Login", "main")
-
-if auth_status is False:
-    st.error("Incorrect username or password")
-
-if auth_status is None:
-    st.warning("Please enter your username and password")
-    st.stop()
-
-# Show logout
-authenticator.logout("Logout", "sidebar")
-
-#---------------------------------------------------------------------------
 
 tab1, tab2, tab3 = st.tabs([
     "🧾 Channel-wise Invoices", 
@@ -40,17 +20,13 @@ tab1, tab2, tab3 = st.tabs([
     "📦 Supplier Sales Analysis"
 ])
 
-# --- Channel-wise Invoice
+# ------------------ TAB 1: Channel-wise Invoices ------------------
 with tab1:
-    st.title("📦 Channel-wise SKU Invoices")
+    st.subheader("📦 Channel-wise SKU Invoices")
     uploaded_file = st.file_uploader("Upload Channel-wise Invoice file", type=["xlsx", "csv"])
 
     if uploaded_file:
-        if uploaded_file.name.endswith('.xlsx'):
-            df = pd.read_excel(uploaded_file)
-        else:
-            df = pd.read_csv(uploaded_file)
-
+        df = pd.read_excel(uploaded_file) if uploaded_file.name.endswith('.xlsx') else pd.read_csv(uploaded_file)
         df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
         st.dataframe(df.head())
 
@@ -71,9 +47,9 @@ with tab1:
                 csv = summary.to_csv(index=False).encode('utf-8')
                 st.download_button("⬇️ Download CSV", data=csv, file_name=f"{channel}_summary.csv", mime='text/csv')
 
-# --- Mintsoft vs Opera Delta
+# ------------------ TAB 2: Mintsoft vs Opera Delta Report ------------------
 with tab2:
-    st.title("🔄 Delta Report: Mintsoft vs Opera Stock")
+    st.subheader("🔄 Delta Report: Mintsoft vs Opera Stock")
     col1, col2 = st.columns(2)
     with col1:
         opera_file = st.file_uploader("Upload Opera Stock (.xlsx)", type=["xlsx"])
@@ -82,25 +58,24 @@ with tab2:
 
     if opera_file and mintsoft_file:
         try:
-            opera_df = pd.read_excel(opera_file, header=0)
+            opera_df = pd.read_excel(opera_file)
             opera_df.columns = [col.strip().lower().replace("  ", " ").replace("_", " ") for col in opera_df.columns]
             sku_col = next((col for col in opera_df.columns if "stock reference" in col), None)
             stock_col = next((col for col in opera_df.columns if "free stock quantity" in col), None)
 
             if not sku_col or not stock_col:
-                st.error("❌ 'Opera Stock' file must contain columns like 'Stock Reference' and 'Free Stock Quantity'")
-                st.write("🔍 Detected columns:", opera_df.columns.tolist())
+                st.error("❌ Opera file must include 'Stock Reference' and 'Free Stock Quantity' columns.")
+                st.write("📋 Detected columns:", opera_df.columns.tolist())
                 st.stop()
 
             opera_df = opera_df[[sku_col, stock_col]].rename(columns={sku_col: 'SKU', stock_col: 'Opera_Stock'})
-            mintsoft_df = pd.read_excel(mintsoft_file)
-            mintsoft_df = mintsoft_df[['ProductSKU', 'Location', 'Quantity']].rename(
+            mintsoft_df = pd.read_excel(mintsoft_file)[['ProductSKU', 'Location', 'Quantity']].rename(
                 columns={'ProductSKU': 'SKU', 'Quantity': 'Mintsoft_Quantity'}
             )
 
             opera_df['SKU'] = opera_df['SKU'].astype(str)
             mintsoft_df['SKU'] = mintsoft_df['SKU'].astype(str)
-            opera_df['Opera_Stock'] = opera_df['Opera_Stock'].apply(lambda x: max(x, 0))
+            opera_df['Opera_Stock'] = opera_df['Opera_Stock'].clip(lower=0)
 
             mintsoft_total = mintsoft_df.groupby('SKU')['Mintsoft_Quantity'].sum().reset_index()
             mintsoft_total.rename(columns={'Mintsoft_Quantity': 'Total_Mintsoft_Stock'}, inplace=True)
@@ -155,8 +130,8 @@ with tab2:
 
             st.subheader("📌 Final Delta Report Preview")
             st.dataframe(final_report, use_container_width=True)
-            today_str = datetime.now().strftime("%d-%b-%Y")
             csv = final_report.to_csv(index=False).encode("utf-8")
+            today_str = datetime.now().strftime("%d-%b-%Y")
             st.download_button(
                 "⬇️ Download CSV",
                 data=csv,
@@ -167,9 +142,9 @@ with tab2:
         except Exception as e:
             st.error(f"❌ Error processing files: {e}")
 
-# --- Supplier Sales Analysis
+# ------------------ TAB 3: Supplier Sales Analysis ------------------
 with tab3:
-    st.title("📦 Supplier Sales Analysis")
+    st.subheader("📦 Supplier Sales Analysis")
     st.write("Upload your weekly supplier sales Excel report to generate detailed business insights.")
     supplier_file = st.file_uploader("Upload Excel File", type=["xlsx"], key="supplier_upload")
 
