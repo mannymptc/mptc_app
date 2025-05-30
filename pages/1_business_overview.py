@@ -1,62 +1,55 @@
 import streamlit as st
-st.set_page_config(page_title="📊 MPTC Business Dashboard", layout="wide")  # ✅ Must be FIRST Streamlit command
-
 import pandas as pd
-import pyodbc
 import plotly.express as px
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from utils.auth_utils import run_auth
+from utils.db import connect_db
 
-from utils.auth_utils import run_auth  # ✅ Auth comes after page config
+st.set_page_config(page_title="📊 MPTC Business Dashboard", layout="wide")
 
-#----------------------------------------------------------
-
+# -----------------------------------------------------
+# 🔐 AUTH
 name, username = run_auth()
 st.title("🏭 Business Overview Dashboard")
 
-# ------------------ DATABASE CONNECTION ------------------
-def connect_db():
-    try:
-        return pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=mptcecommerce-sql-server.database.windows.net;"
-            "DATABASE=mptcecommerce-db;"
-            "UID=mptcadmin;"
-            "PWD=Mptc@2025;"
-            "Connection Timeout=60"
-        )
-    except Exception as e:
-        st.error(f"❌ Database connection failed: {e}")
-        return None
-
-# ------------------ LOAD DATA ------------------
-@st.cache_data
+# -----------------------------------------------------
+# 🚀 LOAD DATA (Faster with persistent caching)
+@st.cache_data(ttl=3600, show_spinner="Loading data...", persist="disk")
 def load_data():
-    conn = connect_db()
-    if conn is None:
-        return pd.DataFrame()
     try:
+        conn = connect_db()
         query = """
-        SELECT order_id, order_channel, order_date, despatch_date, order_value, 
-               order_cust_postcode, product_sku, product_name, product_qty, customer_name, 
-               product_price, order_courier_service
-        FROM OrdersDespatch
-        WHERE order_date >= DATEADD(MONTH, -12, GETDATE())
+            SELECT order_id, order_channel, order_date, despatch_date, order_value, 
+                   order_cust_postcode, product_sku, product_name, product_qty, customer_name, 
+                   product_price, order_courier_service
+            FROM OrdersDespatch
+            WHERE order_date >= DATEADD(MONTH, -12, GETDATE())
         """
         df = pd.read_sql(query, conn)
         conn.close()
+        df['order_date'] = pd.to_datetime(df['order_date']).dt.normalize()
+        df['despatch_date'] = pd.to_datetime(df['despatch_date']).dt.normalize()
         return df
     except Exception as e:
-        st.error(f"❌ Query execution failed: {e}")
+        st.error(f"❌ Failed to load data: {e}")
         return pd.DataFrame()
 
-df = load_data()
+# ✅ Load once
+with st.spinner("📥 Loading OrdersDespatch data..."):
+    df = load_data()
+
 if df.empty:
     st.stop()
 
-df['order_date'] = pd.to_datetime(df['order_date']).dt.normalize()
-df['despatch_date'] = pd.to_datetime(df['despatch_date']).dt.normalize()
-
+# -----------------------------------------------------
+# 🔄 Optional Manual Refresh (if needed later)
+with st.sidebar:
+    if st.button("🔁 Force Reload Data"):
+        st.cache_data.clear()
+        st.success("✅ Cache cleared. Data will reload on next run.")
+        st.rerun()
+        
 # ------------------ KPI COMPARISON TABLE ------------------
 st.markdown("### 📊 KPI Comparison Table (based on Order Date)")
 
