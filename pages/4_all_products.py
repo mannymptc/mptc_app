@@ -2,9 +2,34 @@ import streamlit as st
 import pandas as pd
 import pyodbc
 from utils.db import connect_db
+import streamlit_authenticator as stauth
+from auth_config import credentials
 
 st.set_page_config(page_title="All Products", layout="wide")
 st.title("📦 Products Information Portal")
+
+#--------------------------------------------------------------------------
+# Setup login form
+authenticator = stauth.Authenticate(
+    credentials,
+    "mptc_app_cookie",           # cookie name
+    "mptc_app_key",              # key used to encrypt the cookie
+    cookie_expiry_days=0.1251    # 3 hour session time per login
+)
+
+name, auth_status, username = authenticator.login("Login", "main")
+
+if auth_status is False:
+    st.error("Incorrect username or password")
+
+if auth_status is None:
+    st.warning("Please enter your username and password")
+    st.stop()
+
+# Show logout
+authenticator.logout("Logout", "sidebar")
+
+#------------------------------------------------------------------------
 
 @st.cache_data
 def load_data():
